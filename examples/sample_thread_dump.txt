@@ -1,0 +1,98 @@
+Full thread dump Java HotSpot(TM) 64-Bit Server VM (25.312-b07 mixed mode):
+
+"Thread-1" #12 prio=5 os_prio=0 tid=0x00007f8c4c001000 nid=0x1a3b waiting for monitor entry [0x00007f8c3ffff000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at com.example.service.DataProcessor.processData(DataProcessor.java:45)
+        - waiting to lock <0x00000000d5e7e8a8> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+        at com.example.service.DataProcessor.handleRequest(DataProcessor.java:78)
+        at com.example.controller.RequestHandler.process(RequestHandler.java:123)
+        at java.lang.Thread.run(Thread.java:748)
+
+"Thread-2" #13 prio=5 os_prio=0 tid=0x00007f8c4c002000 nid=0x1a3c waiting for monitor entry [0x00007f8c3fffe000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at com.example.service.CacheManager.updateCache(CacheManager.java:67)
+        - waiting to lock <0x00000000d5e7e9b0> (a java.lang.Object)
+        - locked <0x00000000d5e7e8a8> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+        at com.example.service.DataProcessor.processData(DataProcessor.java:52)
+        at com.example.service.DataProcessor.handleRequest(DataProcessor.java:78)
+        at java.lang.Thread.run(Thread.java:748)
+
+"Thread-3" #14 prio=5 os_prio=0 tid=0x00007f8c4c003000 nid=0x1a3d runnable [0x00007f8c3fffd000]
+   java.lang.Thread.State: RUNNABLE
+        at com.example.service.CacheManager.updateCache(CacheManager.java:70)
+        - locked <0x00000000d5e7e9b0> (a java.lang.Object)
+        at com.example.service.CacheManager.refresh(CacheManager.java:89)
+        at com.example.scheduler.CacheRefreshTask.run(CacheRefreshTask.java:34)
+        at java.lang.Thread.run(Thread.java:748)
+
+"http-nio-8080-exec-1" #15 prio=5 os_prio=0 tid=0x00007f8c4c004000 nid=0x1a3e waiting on condition [0x00007f8c3fffc000]
+   java.lang.Thread.State: WAITING (parking)
+        at sun.misc.Unsafe.park(Native Method)
+        - parking to wait for  <0x00000000d5e7ea00> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+        at java.util.concurrent.locks.LockSupport.park(LockSupport.java:175)
+        at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:2039)
+        at java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:442)
+        at org.apache.tomcat.util.threads.TaskQueue.take(TaskQueue.java:107)
+        at org.apache.tomcat.util.threads.TaskQueue.take(TaskQueue.java:33)
+        at java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1074)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1134)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+        at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:61)
+        at java.lang.Thread.run(Thread.java:748)
+
+"http-nio-8080-exec-2" #16 prio=5 os_prio=0 tid=0x00007f8c4c005000 nid=0x1a3f waiting for monitor entry [0x00007f8c3fffb000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at com.example.service.DataProcessor.processData(DataProcessor.java:45)
+        - waiting to lock <0x00000000d5e7e8a8> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+        at com.example.service.DataProcessor.handleRequest(DataProcessor.java:78)
+        at com.example.controller.RequestHandler.process(RequestHandler.java:123)
+        at com.example.servlet.ApiServlet.doPost(ApiServlet.java:89)
+        at javax.servlet.http.HttpServlet.service(HttpServlet.java:661)
+        at javax.servlet.http.HttpServlet.service(HttpServlet.java:742)
+
+"http-nio-8080-exec-3" #17 prio=5 os_prio=0 tid=0x00007f8c4c006000 nid=0x1a40 waiting for monitor entry [0x00007f8c3fffa000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at com.example.service.DataProcessor.processData(DataProcessor.java:45)
+        - waiting to lock <0x00000000d5e7e8a8> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+        at com.example.service.DataProcessor.handleRequest(DataProcessor.java:78)
+        at com.example.controller.RequestHandler.process(RequestHandler.java:123)
+        at com.example.servlet.ApiServlet.doPost(ApiServlet.java:89)
+
+"http-nio-8080-exec-4" #18 prio=5 os_prio=0 tid=0x00007f8c4c007000 nid=0x1a41 waiting for monitor entry [0x00007f8c3fff9000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at com.example.service.DataProcessor.processData(DataProcessor.java:45)
+        - waiting to lock <0x00000000d5e7e8a8> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+        at com.example.service.DataProcessor.handleRequest(DataProcessor.java:78)
+        at com.example.controller.RequestHandler.process(RequestHandler.java:123)
+
+"http-nio-8080-exec-5" #19 prio=5 os_prio=0 tid=0x00007f8c4c008000 nid=0x1a42 waiting for monitor entry [0x00007f8c3fff8000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at com.example.service.DataProcessor.processData(DataProcessor.java:45)
+        - waiting to lock <0x00000000d5e7e8a8> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+        at com.example.service.DataProcessor.handleRequest(DataProcessor.java:78)
+
+"http-nio-8080-exec-6" #20 prio=5 os_prio=0 tid=0x00007f8c4c009000 nid=0x1a43 runnable [0x00007f8c3fff7000]
+   java.lang.Thread.State: RUNNABLE
+        at com.example.util.StringProcessor.processLargeString(StringProcessor.java:234)
+        at com.example.service.DataProcessor.processData(DataProcessor.java:156)
+        at com.example.controller.RequestHandler.process(RequestHandler.java:123)
+
+"http-nio-8080-exec-7" #21 prio=5 os_prio=0 tid=0x00007f8c4c00a000 nid=0x1a44 runnable [0x00007f8c3fff6000]
+   java.lang.Thread.State: RUNNABLE
+        at com.example.util.StringProcessor.processLargeString(StringProcessor.java:234)
+        at com.example.service.DataProcessor.processData(DataProcessor.java:156)
+
+"http-nio-8080-exec-8" #22 prio=5 os_prio=0 tid=0x00007f8c4c00b000 nid=0x1a45 runnable [0x00007f8c3fff5000]
+   java.lang.Thread.State: RUNNABLE
+        at com.example.util.StringProcessor.processLargeString(StringProcessor.java:234)
+        at com.example.service.DataProcessor.processData(DataProcessor.java:156)
+
+"GC task thread#0 (ParallelGC)" os_prio=0 tid=0x00007f8c50021000 nid=0x1a2e runnable
+
+"GC task thread#1 (ParallelGC)" os_prio=0 tid=0x00007f8c50023000 nid=0x1a2f runnable
+
+"VM Thread" os_prio=0 tid=0x00007f8c5008e000 nid=0x1a38 runnable
+
+"VM Periodic Task Thread" os_prio=0 tid=0x00007f8c500e0000 nid=0x1a3a waiting on condition
+
+JNI global references: 324

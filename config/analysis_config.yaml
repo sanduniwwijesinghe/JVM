@@ -1,0 +1,37 @@
+# IFS JVM Diagnostics Copilot Configuration
+# Adjust thresholds based on your application characteristics
+
+thread_analysis:
+  # Alert if more than N threads are in BLOCKED state
+  blocked_threshold: 10
+
+  # Alert if more than N threads are RUNNABLE (potential CPU saturation)
+  runnable_threshold: 50
+
+  # Alert if more than N threads are waiting on the same lock
+  contention_threshold: 5
+
+heap_analysis:
+  # Alert if a single class uses more than N% of heap (0.0 to 1.0)
+  dominant_class_threshold: 0.3
+
+  # Alert if a class has more than N instances
+  object_count_threshold: 1000000
+
+severity_mapping:
+  # Severity levels for different issue types
+  deadlock: CRITICAL
+  high_contention: HIGH
+  thread_exhaustion: HIGH
+  memory_pressure: MEDIUM
+  cpu_hotspot: MEDIUM
+
+output:
+  # Include stack traces in reports
+  include_stack_traces: true
+
+  # Maximum stack frames to show per thread
+  max_stack_frames: 10
+
+  # Maximum threads to show in detail
+  max_threads_detail: 5

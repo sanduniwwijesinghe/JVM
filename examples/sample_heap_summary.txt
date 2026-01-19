@@ -1,0 +1,32 @@
+Class Histogram - Heap Size: 1024 MB
+
+Class Name                                              | Objects     | Shallow Heap | Retained Heap
+-------------------------------------------------------|-------------|--------------|---------------
+java.lang.String                                        | 2,456,789   | 98,271,560   | 234,567,890
+char[]                                                  | 2,456,789   | 78,234,567   | 78,234,567
+java.util.HashMap$Node                                  | 1,234,567   | 49,382,680   | 123,456,789
+com.example.model.Customer                              | 567,890     | 45,431,200   | 456,789,012
+java.lang.Object[]                                      | 345,678     | 34,567,800   | 89,012,345
+java.util.ArrayList                                     | 234,567     | 11,739,360   | 67,890,123
+com.example.model.Order                                 | 189,012     | 15,120,960   | 234,567,890
+java.util.HashMap                                       | 156,789     | 12,543,120   | 156,789,012
+com.example.cache.CacheEntry                            | 145,678     | 11,654,240   | 345,678,901
+java.lang.Long                                          | 123,456     | 2,962,944    | 2,962,944
+java.util.concurrent.ConcurrentHashMap$Node             | 98,765      | 3,950,600    | 98,765,432
+com.example.service.SessionData                         | 87,654      | 7,012,320    | 234,567,890
+java.util.Date                                          | 76,543      | 1,836,832    | 1,836,832
+com.example.model.Product                               | 65,432      | 5,234,560    | 123,456,789
+java.lang.Integer                                       | 54,321      | 869,136      | 869,136
+java.util.LinkedList$Node                               | 43,210      | 1,728,400    | 43,210,987
+com.example.dto.OrderDTO                                | 32,109      | 2,568,720    | 89,012,345
+java.util.HashSet                                       | 21,098      | 1,055,000    | 23,456,789
+java.lang.ref.SoftReference                             | 19,876      | 476,224      | 12,345,678
+java.util.TreeMap$Entry                                 | 18,765      | 750,600      | 18,765,432
+
+Total Objects: 8,234,567
+Total Shallow Heap: 387,234,567 bytes (369.2 MB)
+
+Notes:
+- Exported from Eclipse MAT Histogram
+- Heap dump captured at: 2024-01-19 10:30:45
+- JVM: Java HotSpot(TM) 64-Bit Server VM 1.8.0_312

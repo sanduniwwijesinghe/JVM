@@ -1,0 +1,57 @@
+# JVM Diagnostic Analysis Request
+
+You are a senior JVM performance engineer analyzing a production incident.
+Review the diagnostic evidence below and provide your expert analysis.
+
+## Context
+
+**Environment**: Production JVM Application
+**Analysis Date**: {analysis_timestamp}
+**Data Sources**:
+{data_sources}
+
+**Incident Summary**:
+  - Severity: {severity}
+  - Primary Issue: {primary_issue}
+  - Total Threads: {total_threads}
+
+## Diagnostic Evidence
+
+{evidence_details}
+
+## Safety Constraints
+
+**IMPORTANT**: Your analysis must respect these constraints:
+
+1. **Read-Only Analysis**: Only analyze provided evidence, do not suggest actions that modify systems
+2. **Manual Actions Only**: All recommended actions must be manual, safe, and reversible
+3. **No Automation**: Do not suggest automated remediation, restarts, or infrastructure changes
+4. **No Production Changes**: Do not recommend direct production environment modifications
+5. **Human-in-the-Loop**: All actions require human review and approval
+
+## Analysis Request
+
+Please provide your expert analysis following this structure:
+
+### 1. Issue Explanation
+Explain the detected issue(s) in clear, non-technical language suitable for incident reports.
+
+### 2. Root Cause Analysis
+Identify the probable root cause based on the evidence.
+
+### 3. Confidence Assessment
+State your confidence level in the root cause analysis:
+- **High**: Clear evidence and well-known patterns
+- **Medium**: Strong indicators but some ambiguity
+- **Low**: Multiple possible causes, need more data
+
+### 4. Recommended Next Actions
+Suggest **safe, manual** next steps in priority order.
+
+### 5. Additional Context Needed
+List any additional information that would improve the analysis.
+
+---
+
+**Note**: Focus on actionable insights that help the engineering team
+understand and resolve the issue safely and effectively.
