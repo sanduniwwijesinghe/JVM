@@ -101,21 +101,23 @@ class ThreadAnalyzer:
         if hotspots:
             self.evidence.contention_hotspots = hotspots
 
-            # Check for high contention
-            high_contention_hotspots = [
-                h for h in hotspots
-                if h.get_severity() in [IssueSeverity.CRITICAL, IssueSeverity.HIGH]
-            ]
+            # Every hotspot at or above the configured threshold is reported; severity
+            # scales with the number of blocked threads.
+            self.evidence.high_contention = any(
+                h.get_severity() in [IssueSeverity.CRITICAL, IssueSeverity.HIGH]
+                for h in hotspots
+            )
 
-            if high_contention_hotspots:
-                self.evidence.high_contention = True
-
-                for hotspot in high_contention_hotspots[:3]:  # Top 3
-                    issue = (
-                        f"High lock contention: {hotspot.contention_count} threads "
-                        f"blocked on {hotspot.lock_info.lock_class}"
-                    )
-                    self.evidence.add_issue(issue, hotspot.get_severity())
+            for hotspot in hotspots[:3]:  # Top 3
+                holder = (
+                    f", held by '{hotspot.holder_thread.name}'"
+                    if hotspot.holder_thread else ""
+                )
+                issue = (
+                    f"Lock contention: {hotspot.contention_count} threads waiting on "
+                    f"{hotspot.lock_info.lock_class} <{hotspot.lock_info.lock_id}>{holder}"
+                )
+                self.evidence.add_issue(issue, hotspot.get_severity())
 
             # Add contention signals
             self.evidence.signals['contention_hotspots'] = [

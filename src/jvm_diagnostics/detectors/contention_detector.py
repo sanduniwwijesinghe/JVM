@@ -7,7 +7,7 @@ on the same lock.
 
 from typing import List, Dict
 from collections import defaultdict
-from ..models.evidence import ThreadInfo, ThreadState, ContentionHotspot, LockInfo
+from ..models.evidence import ThreadInfo, ThreadState, ContentionHotspot
 
 
 class ContentionDetector:
@@ -119,7 +119,7 @@ class ContentionDetector:
             lines.append(f"  Held by: {hotspot.holder_thread.name}")
             lines.append(f"    State: {hotspot.holder_thread.state.value}")
             if hotspot.holder_thread.stack_trace:
-                lines.append(f"    Top stack frame:")
+                lines.append("    Top stack frame:")
                 top_frames = hotspot.holder_thread.get_top_stack_frames(3)
                 for frame in top_frames:
                     lines.append(f"      {frame}")

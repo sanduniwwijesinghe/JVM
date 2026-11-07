@@ -1,4 +1,4 @@
-# IFS JVM Diagnostics Copilot Configuration
+# JVM Diagnostics Copilot - analysis thresholds
 # Adjust thresholds based on your application characteristics
 
 thread_analysis:

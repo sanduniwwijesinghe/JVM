@@ -24,11 +24,11 @@ class HeapSummaryParser:
 
     # Regex patterns for different heap summary formats
 
-    # Eclipse MAT histogram format:
-    # Class Name | Shallow Heap | Retained Heap | Objects
-    MAT_HISTOGRAM_PATTERN = re.compile(
-        r'([^\|]+?)\s*\|\s*([0-9,]+)\s*\|\s*([0-9,]+)\s*\|\s*([0-9,]+)'
-    )
+    # Eclipse MAT histogram format (pipe separated). Column order is read from the
+    # header row; without a header we assume MAT's default export order:
+    # Class Name | Objects | Shallow Heap | Retained Heap
+    MAT_DEFAULT_COLUMNS = ['class', 'objects', 'shallow', 'retained']
+    MAT_ROW_PATTERN = re.compile(r'^\s*[^|]+?(\s*\|\s*[0-9,]+){2,3}\s*$')
 
     # jmap -histo format:
     # num     #instances         #bytes  class name
@@ -44,7 +44,7 @@ class HeapSummaryParser:
     )
 
     # Size patterns (MB, KB, etc.)
-    SIZE_PATTERN = re.compile(r'([\d,.]+)\s*(MB|KB|GB|B)', re.IGNORECASE)
+    SIZE_PATTERN = re.compile(r'([\d,.]+)\s*(MB|KB|GB|bytes|B)\b', re.IGNORECASE)
 
     # Percentage patterns
     PERCENT_PATTERN = re.compile(r'([\d.]+)\s*%')
@@ -53,6 +53,7 @@ class HeapSummaryParser:
         self.heap_classes: List[HeapClassInfo] = []
         self.total_heap_size: Optional[int] = None
         self.raw_text: str = ""
+        self.mat_columns: List[str] = list(self.MAT_DEFAULT_COLUMNS)
 
     def parse_file(self, file_path: str) -> List[HeapClassInfo]:
         """
@@ -81,6 +82,7 @@ class HeapSummaryParser:
         """
         self.raw_text = text
         self.heap_classes = []
+        self.mat_columns = list(self.MAT_DEFAULT_COLUMNS)
 
         # Try to detect total heap size
         self._extract_total_heap_size(text)
@@ -88,8 +90,12 @@ class HeapSummaryParser:
         lines = text.split('\n')
 
         for line in lines:
-            # Skip empty lines and headers
-            if not line.strip() or self._is_header_line(line):
+            # Skip empty lines and headers (remembering MAT column order)
+            if not line.strip():
+                continue
+            if self._is_header_line(line):
+                if '|' in line:
+                    self._read_mat_header(line)
                 continue
 
             # Try different parsing patterns
@@ -115,20 +121,36 @@ class HeapSummaryParser:
         line_lower = line.lower()
         return any(keyword in line_lower for keyword in header_keywords)
 
+    def _read_mat_header(self, line: str):
+        """Map MAT header names (in any order) to column keys."""
+        columns = []
+        for cell in line.split('|'):
+            name = cell.strip().lower()
+            if 'class' in name:
+                columns.append('class')
+            elif 'retained' in name:
+                columns.append('retained')
+            elif 'shallow' in name:
+                columns.append('shallow')
+            elif 'object' in name or 'instance' in name:
+                columns.append('objects')
+            else:
+                columns.append('ignore')
+        if 'class' in columns and 'objects' in columns and 'shallow' in columns:
+            self.mat_columns = columns
+
     def _parse_line(self, line: str) -> Optional[HeapClassInfo]:
         """Try to parse a single line using different patterns."""
         # Try Eclipse MAT format
-        match = self.MAT_HISTOGRAM_PATTERN.search(line)
-        if match:
-            class_name = match.group(1).strip()
-            shallow_heap = self._parse_number(match.group(2))
-            retained_heap = self._parse_number(match.group(3))
-            instance_count = self._parse_number(match.group(4))
+        if self.MAT_ROW_PATTERN.match(line):
+            cells = [c.strip() for c in line.split('|')]
+            values = dict(zip(self.mat_columns, cells, strict=False))
+            retained_heap = self._parse_number(values.get('retained', '0'))
 
             return HeapClassInfo(
-                class_name=class_name,
-                instance_count=instance_count,
-                shallow_heap=shallow_heap,
+                class_name=values.get('class', cells[0]),
+                instance_count=self._parse_number(values.get('objects', '0')),
+                shallow_heap=self._parse_number(values.get('shallow', '0')),
                 retained_heap=retained_heap if retained_heap > 0 else None
             )
 
@@ -180,6 +202,7 @@ class HeapSummaryParser:
 
         multipliers = {
             'B': 1,
+            'BYTES': 1,
             'KB': 1024,
             'MB': 1024 * 1024,
             'GB': 1024 * 1024 * 1024,
@@ -190,10 +213,13 @@ class HeapSummaryParser:
     def _extract_total_heap_size(self, text: str):
         """Try to extract total heap size from text."""
         # Look for patterns like "Total: 1024 MB" or "Heap size: 1.5 GB"
+        # Explicit heap size first; "Total ..." lines are often just the sum of
+        # shallow heap of the listed classes. [^\S\n]* keeps the unit on the same line.
+        unit = r'([\d,.]+[^\S\n]*(?:MB|KB|GB|bytes|B)\b)'
         patterns = [
-            r'total.*?:\s*([\d,.]+\s*(?:MB|KB|GB|B))',
-            r'heap size.*?:\s*([\d,.]+\s*(?:MB|KB|GB|B))',
-            r'used.*?:\s*([\d,.]+\s*(?:MB|KB|GB|B))',
+            r'heap size[^\n]*?:[^\S\n]*' + unit,
+            r'used[^\n]*?:[^\S\n]*' + unit,
+            r'total[^\n]*?heap[^\n]*?:[^\S\n]*' + unit,
         ]
 
         for pattern in patterns:

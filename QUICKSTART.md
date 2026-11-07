@@ -1,5 +1,5 @@
 # Quick Start Guide
-## IFS JVM Diagnostics Copilot
+## JVM Diagnostics Copilot
 
 Get started with JVM diagnostic analysis in 5 minutes.
 
@@ -8,11 +8,11 @@ Get started with JVM diagnostic analysis in 5 minutes.
 ## Installation
 
 ```bash
-# 1. Install Python dependencies
-pip install -r requirements.txt
+# 1. Install (from a clone)
+pip install -e .
 
 # 2. Verify installation
-python src/cli.py --version
+jvm-diag --version
 ```
 
 ## Basic Usage
@@ -20,7 +20,7 @@ python src/cli.py --version
 ### Scenario 1: Analyze a Thread Dump
 
 ```bash
-python src/cli.py analyze --thread-dump examples/sample_thread_dump.txt
+jvm-diag analyze --thread-dump examples/sample_thread_dump.txt
 ```
 
 **What you get**:
@@ -34,7 +34,7 @@ python src/cli.py analyze --thread-dump examples/sample_thread_dump.txt
 ### Scenario 2: Analyze Both Thread Dump and Heap Summary
 
 ```bash
-python src/cli.py analyze \
+jvm-diag analyze \
   --thread-dump examples/sample_thread_dump.txt \
   --heap-summary examples/sample_heap_summary.txt \
   --output my_report.txt
@@ -47,7 +47,7 @@ python src/cli.py analyze \
 ### Scenario 3: Handle .hprof Files
 
 ```bash
-python src/cli.py analyze --hprof heap_dump.hprof
+jvm-diag analyze --hprof heap_dump.hprof
 ```
 
 **Result**: Step-by-step guidance to export text summary from Eclipse MAT
@@ -63,7 +63,7 @@ Run a complete demo using provided sample dumps:
 cd JVM
 
 # Run analysis on sample data
-python src/cli.py analyze \
+jvm-diag analyze \
   --thread-dump examples/sample_thread_dump.txt \
   --heap-summary examples/sample_heap_summary.txt \
   --output examples/demo_output.txt
@@ -108,7 +108,7 @@ jmap -histo <pid> > heap_histogram.txt
 ### Step 3: Run Diagnostic Analysis
 
 ```bash
-python src/cli.py analyze \
+jvm-diag analyze \
   --thread-dump thread_dump.txt \
   --heap-summary heap_histogram.txt \
   --output diagnostic_report.txt
@@ -141,28 +141,28 @@ Follow the recommended actions in the report:
 
 ```bash
 # Show help
-python src/cli.py --help
+jvm-diag --help
 
 # Show version
-python src/cli.py --version
+jvm-diag --version
 
 # Analyze thread dump only
-python src/cli.py analyze --thread-dump <file>
+jvm-diag analyze --thread-dump <file>
 
 # Analyze heap summary only
-python src/cli.py analyze --heap-summary <file>
+jvm-diag analyze --heap-summary <file>
 
 # Analyze both
-python src/cli.py analyze --thread-dump <file> --heap-summary <file>
+jvm-diag analyze --thread-dump <file> --heap-summary <file>
 
 # Save output to specific location
-python src/cli.py analyze --thread-dump <file> --output <output-file>
+jvm-diag analyze --thread-dump <file> --output <output-file>
 
 # Generate summary only (no detailed report)
-python src/cli.py analyze --thread-dump <file> --mode summary
+jvm-diag analyze --thread-dump <file> --mode summary
 
 # Generate Copilot prompt only
-python src/cli.py analyze --thread-dump <file> --mode copilot
+jvm-diag analyze --thread-dump <file> --mode copilot
 ```
 
 ### Output Modes
@@ -212,7 +212,7 @@ heap_analysis:
 
 ```bash
 # Show the tool in action
-python src/cli.py analyze \
+jvm-diag analyze \
   --thread-dump examples/sample_thread_dump.txt \
   --heap-summary examples/sample_heap_summary.txt
 
@@ -230,7 +230,7 @@ python src/cli.py analyze \
 cat examples/sample_thread_dump.txt | head -50
 
 # 2. Run analysis
-python src/cli.py analyze \
+jvm-diag analyze \
   --thread-dump examples/sample_thread_dump.txt \
   --heap-summary examples/sample_heap_summary.txt \
   --output demo_report.txt
@@ -256,7 +256,6 @@ cat demo_copilot_prompt.txt
 2. **Customize config**: Adjust thresholds for your environment
 3. **Integrate with workflow**: Add to incident response runbook
 4. **Gather feedback**: Share results with team for validation
-5. **Plan Phase 2**: Based on Phase 1 experience
 
 ---
 
@@ -264,8 +263,8 @@ cat demo_copilot_prompt.txt
 
 - **Documentation**: See `README.md` for detailed information
 - **Sample data**: Check `examples/` directory
-- **Configuration**: Edit `config/analysis_config.yaml`
-- **Issues**: Contact IFS JVM Performance Engineering team
+- **Configuration**: Copy `src/jvm_diagnostics/default_config.yaml`, edit it, pass `--config <file>`
+- **Issues**: https://github.com/sanduniwwijesinghe/jvm/issues
 
 ---
 

@@ -1,0 +1,11 @@
+__pycache__/
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+# Analysis outputs and real dumps should never be committed
+*_report.txt
+*_copilot_prompt.txt
+*.hprof

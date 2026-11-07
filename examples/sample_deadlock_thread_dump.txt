@@ -1,0 +1,41 @@
+2026-11-07 10:15:42
+Full thread dump OpenJDK 64-Bit Server VM (17.0.9+9 mixed mode, sharing):
+
+"order-worker-1" #21 prio=5 os_prio=0 cpu=120.50ms elapsed=3600.12s tid=0x00007f1a2c010800 nid=0x2b1 waiting for monitor entry  [0x00007f19f8afe000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at com.example.inventory.StockService.reserve(StockService.java:88)
+        - waiting to lock <0x000000071a2b3c40> (a com.example.inventory.StockLedger)
+        at com.example.orders.OrderService.place(OrderService.java:142)
+        - locked <0x000000071a2b3d80> (a com.example.orders.OrderBook)
+        at com.example.orders.OrderWorker.run(OrderWorker.java:35)
+        at java.lang.Thread.run(java.base@17.0.9/Thread.java:833)
+
+"stock-sync-1" #22 prio=5 os_prio=0 cpu=98.10ms elapsed=3600.10s tid=0x00007f1a2c012000 nid=0x2b2 waiting for monitor entry  [0x00007f19f89fd000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at com.example.orders.OrderService.onStockChange(OrderService.java:201)
+        - waiting to lock <0x000000071a2b3d80> (a com.example.orders.OrderBook)
+        at com.example.inventory.StockService.sync(StockService.java:120)
+        - locked <0x000000071a2b3c40> (a com.example.inventory.StockLedger)
+        at com.example.inventory.StockSyncJob.run(StockSyncJob.java:27)
+        at java.lang.Thread.run(java.base@17.0.9/Thread.java:833)
+
+"http-nio-8080-exec-1" #30 daemon prio=5 os_prio=0 cpu=10.00ms elapsed=3500.00s tid=0x00007f1a2c020000 nid=0x2c0 waiting on condition  [0x00007f19f88fc000]
+   java.lang.Thread.State: WAITING (parking)
+        at jdk.internal.misc.Unsafe.park(java.base@17.0.9/Native Method)
+        - parking to wait for  <0x000000071a000100> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+        at java.util.concurrent.locks.LockSupport.park(java.base@17.0.9/LockSupport.java:341)
+        at java.lang.Thread.run(java.base@17.0.9/Thread.java:833)
+
+"GC Thread#0" os_prio=0 cpu=50.00ms elapsed=3600.50s tid=0x00007f1a2c001000 nid=0x2a1 runnable
+
+Found one Java-level deadlock:
+=============================
+"order-worker-1":
+  waiting to lock monitor 0x00007f19e0004e30 (object 0x000000071a2b3c40, a com.example.inventory.StockLedger),
+  which is held by "stock-sync-1"
+
+"stock-sync-1":
+  waiting to lock monitor 0x00007f19e0007a10 (object 0x000000071a2b3d80, a com.example.orders.OrderBook),
+  which is held by "order-worker-1"
+
+Found 1 deadlock.

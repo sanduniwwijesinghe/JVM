@@ -1,326 +1,133 @@
-# IFS JVM Diagnostics Copilot
+# JVM Diagnostics Copilot
 
-A **Phase-1 local diagnostics tool** for JVM performance analysis that helps reduce Root Cause Analysis (RCA) effort by extracting structured evidence from JVM dumps and generating AI-ready diagnostic prompts.
+[![ci](https://github.com/sanduniwwijesinghe/jvm/actions/workflows/ci.yml/badge.svg)](https://github.com/sanduniwwijesinghe/jvm/actions/workflows/ci.yml)
 
-## Purpose
+A local, read-only CLI that turns **JVM thread dumps and heap histograms** captured during a
+production incident into **structured RCA evidence**: deadlock cycles, lock-contention
+hotspots with the holding thread, CPU-bound stacks, thread-pool saturation and memory-pressure
+signals. It also writes an **AI-ready prompt** so the evidence can be handed to GitHub Copilot
+(or any LLM) for a second opinion, without uploading the raw dump anywhere.
 
-This tool is designed for IFS engineering teams to:
-- Quickly analyze JVM thread dumps and heap summaries captured from production incidents
-- Extract structured diagnostic evidence (deadlocks, contention, memory pressure)
-- Generate GitHub Copilot-ready prompts for AI-assisted root cause analysis
-- Produce human-readable diagnostic summaries for leadership demos
+Built from on-call experience: during a P1, scrolling through a 5,000-line `jstack` output to
+find out *who holds the lock* takes far longer than it should.
 
-## Key Features
+## What it finds
 
-✅ **100% Local Execution** - Runs entirely on your laptop, no cloud dependencies
-✅ **Read-Only & Safe** - No automated remediation, no infrastructure changes
-✅ **Enterprise-Ready** - Designed for IFS operational constraints
-✅ **Copilot Integration** - Generates structured prompts for GitHub Copilot
-✅ **Demo-Friendly** - Clean, professional output for stakeholder presentations
+**Thread dumps** (`jstack`, `jcmd <pid> Thread.print`, `kill -3`; HotSpot / OpenJDK 8-21)
+- Deadlocks: cycles in the thread *wait-for* graph, with the full cycle path
+- Lock contention: locks with N+ waiters, the **holder thread** and its stack
+- Lock chains vs. deadlocks (A waits on B waits on C is reported as contention, not as a deadlock)
+- CPU-bound hotspots: common top frames across RUNNABLE threads
+- Thread-state distribution and per-pool utilisation (e.g. `http-nio-8080-exec`)
 
-## What It Analyzes
+**Heap summaries** (Eclipse MAT histogram export, `jmap -histo`)
+- Dominant classes by share of heap
+- Excessive object counts
+- String / collection retention patterns
 
-### Thread Dump Analysis
-- Thread state distribution (RUNNABLE, BLOCKED, WAITING, TIMED_WAITING)
-- Deadlock detection with full cycle paths
-- Lock contention hotspots
-- CPU-bound thread identification
-- Thread pool exhaustion signals
+Every finding gets a severity (`CRITICAL` deadlock, `HIGH`/`MEDIUM` contention scaled by
+waiter count, and so on), and the report ends with recommended actions that stay safe to run
+manually.
 
-### Heap Analysis
-- Memory pressure indicators from summaries
-- Dominant object classes
-- Excessive object retention patterns
-- Heap growth signals
-
-## Architecture
-
-```
-┌─────────────────┐
-│  JVM Dumps      │
-│  - Thread dump  │──┐
-│  - Heap summary │  │
-│  - .hprof       │  │
-└─────────────────┘  │
-                     │  Parse & Extract
-                     ▼
-┌─────────────────────────────────┐
-│  IFS JVM Diagnostics Copilot    │
-│  - Thread analyzer              │
-│  - Deadlock detector            │
-│  - Contention analyzer          │
-│  - Heap pressure analyzer       │
-└─────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────┐
-│  Structured Evidence            │
-│  - Signals                      │
-│  - Counts                       │
-│  - Stack traces                 │
-└─────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────┐
-│  GitHub Copilot Prompt          │
-│  + Human-Readable Report        │
-└─────────────────────────────────┘
-```
-
-## Installation
-
-### Prerequisites
-- Python 3.8 or higher
-- pip package manager
-
-### Setup
+## Quick start
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd JVM
-
-# Install dependencies
-pip install -r requirements.txt
+pip install git+https://github.com/sanduniwwijesinghe/jvm
+jvm-diag analyze --thread-dump examples/sample_deadlock_thread_dump.txt
 ```
 
-## Usage
-
-### Basic Command
+From a clone:
 
 ```bash
-# Analyze a thread dump
-python src/cli.py analyze --thread-dump /path/to/thread_dump.txt
+git clone https://github.com/sanduniwwijesinghe/jvm && cd jvm
+pip install -e ".[dev]"
+pytest                                   # 16 tests
 
-# Analyze both thread dump and heap summary
-python src/cli.py analyze \
-  --thread-dump /path/to/thread_dump.txt \
-  --heap-summary /path/to/heap_summary.txt
-
-# Output to file
-python src/cli.py analyze \
-  --thread-dump /path/to/thread_dump.txt \
-  --output /path/to/report.txt
-```
-
-### Handling .hprof Files
-
-When you have a `.hprof` heap dump file, use the guidance command:
-
-```bash
-python src/cli.py analyze --hprof /path/to/heap_dump.hprof
-```
-
-This will:
-1. Detect the `.hprof` file
-2. Provide step-by-step instructions to export a text summary using Eclipse MAT
-3. Wait for you to complete the export
-4. Continue analysis with the exported summary
-
-**Why not parse .hprof directly?**
-Binary heap dump files are complex and require specialized tools like Eclipse MAT. This tool focuses on analyzing *text summaries* exported from MAT, keeping the implementation simple, maintainable, and aligned with existing IFS workflows.
-
-### Example Workflow
-
-```bash
-# 1. Capture JVM dumps (existing IFS process)
-#    - Thread dump: jstack <pid> > thread_dump.txt
-#    - Heap dump: jmap -dump:format=b,file=heap.hprof <pid>
-
-# 2. Export heap summary from Eclipse MAT
-#    File -> Open Heap Dump -> heap.hprof
-#    Generate "Histogram" report -> Export as text
-
-# 3. Run diagnostic analysis
-python src/cli.py analyze \
-  --thread-dump thread_dump.txt \
-  --heap-summary heap_histogram.txt \
-  --output diagnostic_report.txt
-
-# 4. Review the generated report and Copilot prompt
-cat diagnostic_report.txt
-
-# 5. Copy the Copilot prompt section to GitHub Copilot for AI reasoning
-```
-
-## Output Format
-
-The tool generates two outputs:
-
-### 1. Human-Readable Diagnostic Summary
-```
-JVM Diagnostic Summary
----------------------
-Detected Issue: Deadlock detected with high thread contention
-Severity: CRITICAL
-
-Key Evidence:
-- Deadlock involving 3 threads
-- 45 threads in BLOCKED state
-- Lock contention on java.util.concurrent.locks.ReentrantLock
-
-Probable Root Cause:
-- Thread-1 holds Lock-A, waiting for Lock-B
-- Thread-2 holds Lock-B, waiting for Lock-A
-- (High confidence - classic deadlock pattern)
-
-Recommended Actions:
-1. Immediate: Review thread dumps for lock ordering
-2. Short-term: Implement lock timeout mechanisms
-3. Long-term: Refactor to eliminate circular dependencies
-```
-
-### 2. GitHub Copilot Prompt
-A structured prompt containing:
-- JVM context and environment details
-- Extracted evidence with thread traces
-- Safety constraints for AI reasoning
-- Request for root cause analysis
-
-## Project Structure
-
-```
-ifs-jvm-diagnostics-copilot/
-├── README.md                     # This file
-├── requirements.txt              # Python dependencies
-├── config/
-│   └── analysis_config.yaml      # Analysis thresholds and rules
-├── src/
-│   ├── cli.py                    # Main CLI entry point
-│   ├── models/
-│   │   └── evidence.py           # Evidence data models
-│   ├── parsers/
-│   │   ├── thread_dump_parser.py # Thread dump parsing
-│   │   └── heap_summary_parser.py# Heap summary parsing
-│   ├── analyzers/
-│   │   ├── thread_analyzer.py    # Thread state analysis
-│   │   └── heap_analyzer.py      # Heap pressure analysis
-│   ├── detectors/
-│   │   ├── deadlock_detector.py  # Deadlock detection
-│   │   └── contention_detector.py# Lock contention detection
-│   ├── generators/
-│   │   ├── copilot_prompt_generator.py  # Copilot prompt generation
-│   │   └── report_generator.py   # Human-readable reports
-│   └── utils/
-│       └── file_handler.py       # File I/O and .hprof handling
-├── templates/
-│   └── copilot_prompt_template.txt  # Copilot prompt template
-└── examples/
-    ├── sample_thread_dump.txt    # Example thread dump
-    ├── sample_heap_summary.txt   # Example heap summary
-    └── demo_output.txt           # Example output
-
-```
-
-## Design Decisions
-
-### 1. **Python-Based Implementation**
-- **Why**: Simple, readable, excellent text processing libraries
-- **Enterprise fit**: Widely available, low barrier to adoption
-
-### 2. **No .hprof Binary Parsing**
-- **Why**: Complex format, requires specialized libraries, high maintenance
-- **Instead**: Detect .hprof files and guide users to export MAT summaries
-- **Benefit**: Leverages existing IFS process (Eclipse MAT), keeps tool simple
-
-### 3. **GitHub Copilot Integration**
-- **Why**: Copilot is already approved and available in IFS
-- **How**: Generate structured prompts that Copilot can reason about
-- **Safety**: Prompts explicitly constrain Copilot to SAFE, MANUAL recommendations
-
-### 4. **Read-Only Operation**
-- **Why**: Enterprise safety, no risk of unintended changes
-- **Scope**: Analysis only, no automated remediation
-
-### 5. **Modular Architecture**
-- **Why**: Easy to extend, test, and maintain
-- **Benefit**: Can add new detectors/analyzers without touching core logic
-
-## Configuration
-
-Edit `config/analysis_config.yaml` to customize:
-
-```yaml
-thread_analysis:
-  blocked_threshold: 10        # Alert if >10 BLOCKED threads
-  runnable_threshold: 50       # Alert if >50 RUNNABLE threads
-  contention_threshold: 5      # Alert if >5 threads on same lock
-
-heap_analysis:
-  dominant_class_threshold: 0.3  # Alert if class uses >30% heap
-  object_count_threshold: 1000000 # Alert if >1M instances
-
-severity_mapping:
-  deadlock: CRITICAL
-  high_contention: HIGH
-  thread_exhaustion: HIGH
-  memory_pressure: MEDIUM
-```
-
-## Testing with Sample Data
-
-```bash
-# Run with provided sample dumps
-python src/cli.py analyze \
-  --thread-dump examples/sample_thread_dump.txt \
+jvm-diag analyze \
+  --thread-dump  examples/sample_thread_dump.txt \
   --heap-summary examples/sample_heap_summary.txt \
-  --output examples/demo_output.txt
+  --output       out/incident_report.txt
+# -> out/incident_report.txt + out/incident_copilot_prompt.txt
 ```
 
-## Demo Preparation
+Sample output (summary):
 
-For leadership demos:
+```
+Severity: MEDIUM
+Issues detected: 5
 
-1. **Prepare Sample Dumps**: Use examples/ directory or sanitized production dumps
-2. **Run Analysis**: Execute CLI command
-3. **Show Output**: Display the human-readable summary
-4. **Highlight Value**:
-   - Time saved (manual analysis → automated extraction)
-   - Structured evidence for RCA
-   - AI-ready prompts for deeper reasoning
-5. **Discuss Next Steps**: Phase-2 enhancements based on feedback
+Top issues:
+  - Lock contention: 5 threads waiting on java.util.concurrent.locks.ReentrantLock$NonfairSync
+    <0x00000000d5e7e8a8>, held by 'Thread-2'
+  - Excessive object retention: java.lang.String has 2,456,789 instances
+  ...
+```
 
-## What This Tool Does NOT Do
+## Options
 
-❌ Parse .hprof binary files directly
-❌ Integrate with Eclipse MAT or fastthread.io APIs
-❌ Modify cloud infrastructure or AKS
-❌ Perform automated remediation
-❌ Restart services or change configurations
-❌ Connect to production monitoring systems
+| Option | Description |
+|---|---|
+| `--thread-dump PATH` | Thread dump text file |
+| `--heap-summary PATH` | Eclipse MAT histogram export or `jmap -histo` output |
+| `--hprof PATH` | Binary heap dump: prints instructions for exporting a histogram |
+| `--output PATH` | Write the report here; the Copilot prompt goes next to it |
+| `--mode full\|summary\|copilot` | Full report, executive summary only, or prompt only |
+| `--config PATH` | Custom thresholds (see [`default_config.yaml`](src/jvm_diagnostics/default_config.yaml)) |
 
-## Limitations & Assumptions
+`python -m jvm_diagnostics ...` works too.
 
-- **Manual Dump Capture**: Assumes dumps are captured using existing IFS process
-- **Text-Based Analysis**: Works with text exports, not binary formats
-- **Single-Point-in-Time**: Analyzes individual dumps, not time-series data
-- **Heuristic-Based**: Uses patterns and thresholds, not ML models
-- **Local Only**: No remote execution or API calls
+## Incident workflow
 
-## Roadmap (Future Phases)
+```bash
+# 1. Capture evidence (2-3 thread dumps ~10 s apart show whether contention persists)
+jcmd <pid> Thread.print -l > td1.txt
+jcmd <pid> GC.class_histogram > histo.txt        # or: jmap -histo:live <pid>
 
-**Phase 2** (Based on Phase-1 Feedback):
-- Multi-dump correlation (before/after comparison)
-- Historical pattern recognition
-- Custom rule definition UI
-- Integration with IFS incident management
+# 2. Analyse locally
+jvm-diag analyze --thread-dump td1.txt --heap-summary histo.txt --output rca/td1_report.txt
 
-**Phase 3** (Future Consideration):
-- VS Code extension for in-editor analysis
-- Automated dump collection (if/when approved)
-- Real-time monitoring integration (if/when approved)
+# 3. Review the report, then paste rca/td1_copilot_prompt.txt into Copilot Chat
+```
 
-## Support & Contribution
+For a binary `.hprof`, open it in Eclipse MAT, export **Histogram** as text, and pass that
+file as `--heap-summary`. Parsing `.hprof` directly is out of scope on purpose (MAT does it
+better).
 
-- **Issues**: Open an issue in the repository
-- **Questions**: Contact the IFS JVM Performance Engineering team
-- **Contributions**: Follow IFS contribution guidelines
+## How it works
+
+```
+thread dump ─▶ ThreadDumpParser ─▶ ThreadInfo[] ─┬▶ DeadlockDetector   (cycle search on wait-for graph)
+                                                 ├▶ ContentionDetector (waiters per lock + holder)
+                                                 └▶ ThreadAnalyzer     (states, pools, CPU hotspots)
+heap summary ─▶ HeapSummaryParser ─▶ HeapClassInfo[] ─▶ HeapAnalyzer   (dominance, counts, retention)
+                                                 │
+                                    DiagnosticEvidence (issues + severity + signals)
+                                                 │
+                          ┌──────────────────────┴───────────────────────┐
+                    ReportGenerator                              CopilotPromptGenerator
+                 (human-readable RCA report)                 (structured prompt for an LLM)
+```
+
+- **Wait-for graph**: an edge `A -> B` exists when thread A waits on a lock held by B.
+  A cycle is a deadlock; a path without a cycle is a lock chain.
+- **Header-aware heap parsing**: MAT column order is read from the header row, so exports with
+  reordered columns still map Objects / Shallow / Retained correctly.
+
+## Design principles
+
+- **Local and read-only**: nothing leaves the laptop, nothing is changed on the JVM. Suitable
+  for environments where dumps may contain customer data.
+- **Evidence, not magic**: the LLM prompt contains extracted facts (counts, lock IDs, top
+  frames), which keeps it small and makes the AI's answer checkable.
+- **One dependency** (`pyyaml`), pure Python, Python 3.10+.
+
+## Roadmap
+
+- Compare several dumps over time (is the same lock still contended 30 s later?)
+- JSON output for ingestion into incident tooling
+- Virtual-thread (Loom) aware parsing for JDK 21+
+- GC log analysis
 
 ## License
 
-Internal use only - IFS Engineering
-
----
-
-**Built with ❤️ by IFS JVM Performance Engineering Team**
-**Designed for enterprise safety and operational excellence**
+MIT. Sample dumps in `examples/` are synthetic.

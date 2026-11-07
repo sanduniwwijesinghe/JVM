@@ -4,8 +4,7 @@ GitHub Copilot prompt generator.
 Generates structured prompts for GitHub Copilot to analyze JVM diagnostic evidence.
 """
 
-from typing import Optional
-from ..models.evidence import DiagnosticEvidence, IssueSeverity
+from ..models.evidence import DiagnosticEvidence
 
 
 class CopilotPromptGenerator:

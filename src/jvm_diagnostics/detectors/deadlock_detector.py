@@ -4,8 +4,8 @@ Deadlock detector for JVM thread dumps.
 Detects circular wait conditions between threads and locks.
 """
 
-from typing import List, Set, Dict, Optional, Tuple
-from ..models.evidence import ThreadInfo, DeadlockCycle, LockInfo
+from typing import List, Set, Dict, Optional
+from ..models.evidence import ThreadInfo, DeadlockCycle
 
 
 class DeadlockDetector:
@@ -180,7 +180,7 @@ class DeadlockDetector:
             lines.append(f"  State: {thread.state.value}")
 
             if thread.holding_locks:
-                lines.append(f"  Holding locks:")
+                lines.append("  Holding locks:")
                 for lock in thread.holding_locks:
                     lines.append(f"    - {lock}")
 

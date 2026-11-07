@@ -1,26 +1,25 @@
-#!/usr/bin/env python3
 """
-IFS JVM Diagnostics Copilot - CLI
+JVM Diagnostics Copilot - CLI
 
 Command-line interface for JVM diagnostic analysis.
 """
 
 import sys
-import os
 from pathlib import Path
 from typing import Optional
+
 import yaml
 
-# Add src to path if running as script
-if __name__ == '__main__':
-    sys.path.insert(0, str(Path(__file__).parent.parent))
+from . import __version__
+from .analyzers.heap_analyzer import HeapAnalyzer
+from .analyzers.thread_analyzer import ThreadAnalyzer
+from .generators.copilot_prompt_generator import CopilotPromptGenerator
+from .generators.report_generator import ReportGenerator
+from .models.evidence import DiagnosticEvidence
+from .utils.file_handler import FileHandler
 
-from src.models.evidence import DiagnosticEvidence
-from src.analyzers.thread_analyzer import ThreadAnalyzer
-from src.analyzers.heap_analyzer import HeapAnalyzer
-from src.generators.copilot_prompt_generator import CopilotPromptGenerator
-from src.generators.report_generator import ReportGenerator
-from src.utils.file_handler import FileHandler
+TOOL_NAME = "JVM Diagnostics Copilot"
+DEFAULT_CONFIG = Path(__file__).parent / "default_config.yaml"
 
 
 class JVMDiagnosticsCLI:
@@ -28,17 +27,19 @@ class JVMDiagnosticsCLI:
     Main CLI application for JVM diagnostics.
     """
 
-    def __init__(self):
-        self.config = self._load_config()
+    def __init__(self, config_path: Optional[str] = None):
+        self.config = self._load_config(config_path)
         self.file_handler = FileHandler()
         self.thread_analyzer = ThreadAnalyzer(self.config.get('thread_analysis', {}))
         self.heap_analyzer = HeapAnalyzer(self.config.get('heap_analysis', {}))
         self.copilot_generator = CopilotPromptGenerator()
         self.report_generator = ReportGenerator()
 
-    def _load_config(self) -> dict:
-        """Load configuration from config file."""
-        config_path = Path(__file__).parent.parent / 'config' / 'analysis_config.yaml'
+    def _load_config(self, config_path: Optional[str] = None) -> dict:
+        """Load thresholds from --config, falling back to the bundled defaults."""
+        config_path = Path(config_path) if config_path else DEFAULT_CONFIG
+        if not config_path.exists():
+            print(f"Warning: config file not found: {config_path} (using defaults)")
 
         if config_path.exists():
             try:
@@ -95,7 +96,7 @@ class JVMDiagnosticsCLI:
         mode = args.get('mode', 'full')  # 'full', 'summary', 'copilot'
 
         print("=" * 80)
-        print("IFS JVM Diagnostics Copilot".center(80))
+        print(TOOL_NAME.center(80))
         print("=" * 80)
         print()
 
@@ -143,9 +144,9 @@ class JVMDiagnosticsCLI:
                 evidence = self.thread_analyzer.analyze_thread_dump(thread_dump_path)
                 print(f"  ✓ Parsed {evidence.total_threads} threads")
                 if evidence.has_deadlock:
-                    print(f"  ⚠️  CRITICAL: Deadlock detected!")
+                    print("  ⚠️  CRITICAL: Deadlock detected!")
                 if evidence.high_contention:
-                    print(f"  ⚠️  HIGH: Lock contention detected!")
+                    print("  ⚠️  HIGH: Lock contention detected!")
             except Exception as e:
                 print(f"Error analyzing thread dump: {e}")
                 import traceback
@@ -175,7 +176,7 @@ class JVMDiagnosticsCLI:
                 evidence = self.heap_analyzer.analyze_heap_summary(heap_summary_path, evidence)
                 print(f"  ✓ Parsed {len(evidence.heap_classes)} heap classes")
                 if evidence.heap_pressure:
-                    print(f"  ⚠️  WARNING: Heap pressure detected!")
+                    print("  ⚠️  WARNING: Heap pressure detected!")
             except Exception as e:
                 print(f"Error analyzing heap summary: {e}")
                 import traceback
@@ -275,18 +276,18 @@ class JVMDiagnosticsCLI:
 
     def show_version(self):
         """Show version information."""
-        print("IFS JVM Diagnostics Copilot")
-        print("Version: 1.0.0")
+        print(TOOL_NAME)
+        print(f"Version: {__version__}")
         print("A local diagnostics tool for JVM performance analysis")
 
     def show_help(self):
         """Show help information."""
         help_text = """
-IFS JVM Diagnostics Copilot - Help
-===================================
+JVM Diagnostics Copilot - Help
+==============================
 
 USAGE:
-    python src/cli.py analyze [OPTIONS]
+    jvm-diag analyze [OPTIONS]
 
 OPTIONS:
     --thread-dump PATH      Path to thread dump file (.txt)
@@ -294,27 +295,28 @@ OPTIONS:
     --hprof PATH            Path to .hprof file (shows export guidance)
     --output PATH           Output file path for report
     --mode MODE             Output mode: full, summary, copilot (default: full)
+    --config PATH           Custom thresholds YAML (default: bundled config)
 
 EXAMPLES:
 
     # Analyze thread dump only
-    python src/cli.py analyze --thread-dump thread_dump.txt
+    jvm-diag analyze --thread-dump thread_dump.txt
 
     # Analyze both thread dump and heap summary
-    python src/cli.py analyze \\
+    jvm-diag analyze \\
         --thread-dump thread_dump.txt \\
         --heap-summary heap_histogram.txt
 
     # Save report to file
-    python src/cli.py analyze \\
+    jvm-diag analyze \\
         --thread-dump thread_dump.txt \\
         --output diagnostic_report.txt
 
     # Handle .hprof file (shows export instructions)
-    python src/cli.py analyze --hprof heap_dump.hprof
+    jvm-diag analyze --hprof heap_dump.hprof
 
     # Generate Copilot prompt only
-    python src/cli.py analyze \\
+    jvm-diag analyze \\
         --thread-dump thread_dump.txt \\
         --mode copilot
 
@@ -330,7 +332,7 @@ WORKFLOW:
        - Export as text: heap_histogram.txt
 
     3. Run analysis:
-       python src/cli.py analyze \\
+       jvm-diag analyze \\
            --thread-dump thread_dump.txt \\
            --heap-summary heap_histogram.txt \\
            --output report.txt
@@ -350,7 +352,8 @@ def parse_args():
         'heap_summary': None,
         'hprof': None,
         'output': None,
-        'mode': 'full'
+        'mode': 'full',
+        'config': None,
     }
 
     # Simple argument parsing
@@ -374,6 +377,9 @@ def parse_args():
         elif arg == '--output' and i + 1 < len(sys.argv):
             args['output'] = sys.argv[i + 1]
             i += 1
+        elif arg == '--config' and i + 1 < len(sys.argv):
+            args['config'] = sys.argv[i + 1]
+            i += 1
         elif arg == '--mode' and i + 1 < len(sys.argv):
             args['mode'] = sys.argv[i + 1]
             i += 1
@@ -389,7 +395,7 @@ def main():
     """Main entry point."""
     try:
         args = parse_args()
-        cli = JVMDiagnosticsCLI()
+        cli = JVMDiagnosticsCLI(args.get('config'))
         cli.run(args)
     except KeyboardInterrupt:
         print("\nInterrupted by user")
